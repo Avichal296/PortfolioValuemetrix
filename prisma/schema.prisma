@@ -1,0 +1,50 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  email      String      @unique
+  password   String?     // hashed, for credentials auth
+  name       String?
+  portfolios Portfolio[]
+}
+
+model Portfolio {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  title                String
+  userId               String    @db.ObjectId
+  user                 User      @relation(fields: [userId], references: [id])
+  holdings             Holding[]
+  cash                 Float     @default(0)
+  privacy              String    @default("PRIVATE") // PRIVATE | PUBLIC | SMART_SHARED
+  shareToken           String?   @unique
+  shareTokenRevokedAt  DateTime? // when creator revoked share
+  createdAt            DateTime  @default(now())
+}
+
+model Holding {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  ticker      String
+  quantity    Int
+  buyPrice    Float
+  portfolioId String    @db.ObjectId
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id])
+}
+
+model TokenAccessLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  shareToken  String
+  portfolioId String   @db.ObjectId
+  viewedAt    DateTime @default(now())
+  fingerprint String?
+  ip          String?
+  userId      String?  @db.ObjectId
+}
